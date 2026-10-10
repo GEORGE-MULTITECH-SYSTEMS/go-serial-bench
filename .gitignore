@@ -20,3 +20,7 @@ Thumbs.db
 
 # Wails build artifact
 /serial_terminal/frontend/package.json.md5
+
+# Local working material: bench rigs, project memory, evidence trail.
+# Never published — the public repository is the source of truth for the code.
+/_private/
