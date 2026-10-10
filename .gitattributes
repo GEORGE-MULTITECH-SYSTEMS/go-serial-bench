@@ -1,0 +1,27 @@
+# Normalise line endings.
+#
+# Without this, a Windows clone with core.autocrlf=true checks out CRLF and
+# `gofmt -l` then reports every Go file as unformatted, because gofmt treats
+# CRLF as a formatting difference. Forcing LF in the working tree keeps the
+# toolchain quiet on every platform and keeps diffs free of whole-file churn.
+* text=auto eol=lf
+
+*.go     text eol=lf
+*.mod    text eol=lf
+*.sum    text eol=lf
+*.js     text eol=lf
+*.ts     text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.ino    text eol=lf
+
+# Windows-only files that genuinely want CRLF.
+*.manifest text eol=crlf
+
+# Binaries: never touch.
+*.png  binary
+*.ico  binary
+*.exe  binary
