@@ -1,0 +1,22 @@
+# Build output
+/serial_terminal/build/bin/
+*.exe
+
+# Wails/Vite generated frontend bundle
+/serial_terminal/frontend/dist/*
+!/serial_terminal/frontend/dist/.gitkeep
+/serial_terminal/frontend/node_modules/
+
+# Logs and local captures
+*.log
+*.err
+
+# Editor and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Wails build artifact
+/serial_terminal/frontend/package.json.md5

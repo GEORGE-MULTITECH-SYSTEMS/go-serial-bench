@@ -1,0 +1,4 @@
+This directory receives the Vite bundle produced by `wails build`, which is
+embedded into the binary by go:embed. It is kept in the repository only so
+that `go build` and `go vet` work on a fresh clone before the frontend has
+been built.

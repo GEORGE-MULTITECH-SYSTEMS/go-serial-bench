@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Go Serial Bench</title>
+  <script>/* apply saved theme before first paint (no flash) */try{document.documentElement.dataset.theme=localStorage.getItem("gsb.theme")||"light";}catch(e){document.documentElement.dataset.theme="light";}</script>
+  <link rel="stylesheet" href="./src/style.css"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== top bar: identity + health ===== -->
+  <header class="topbar">
+    <div class="ident">
+      <span class="brand">Go Serial Bench</span>
+      <span class="chip" id="chipPid">pid —</span>
+      <span class="chip chip-port" id="chipPort">no port</span>
+      <span class="chip" id="chipCfg"></span>
+    </div>
+    <button id="btnTheme" class="ghost small" title="Switch light / dark theme">◐ Theme</button>
+    <div class="health" id="health">
+      <span class="dot"></span>
+      <span class="label" id="healthLabel">CLOSED</span>
+      <span class="sub" id="healthSub">open a port</span>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <!-- ===== left rail: port config ===== -->
+    <aside class="rail left">
+      <section class="card">
+        <h3>Port</h3>
+        <div class="row">
+          <select id="port" title="COM port"></select>
+          <button id="btnRefresh" class="icon" title="Rescan ports">⟳</button>
+        </div>
+        <div class="grid2">
+          <label>Baud
+            <select id="baud">
+              <option>1200</option><option>2400</option><option>4800</option><option>9600</option>
+              <option>19200</option><option selected>38400</option><option>57600</option>
+              <option>76800</option><option>115200</option><option>230400</option>
+            </select>
+          </label>
+          <label>Data
+            <select id="dataBits"><option>5</option><option>6</option><option>7</option><option selected>8</option></select>
+          </label>
+          <label>Parity
+            <select id="parity">
+              <option value="none" selected>None</option><option value="even">Even</option>
+              <option value="odd">Odd</option><option value="mark">Mark</option><option value="space">Space</option>
+            </select>
+          </label>
+          <label>Stop
+            <select id="stopBits"><option selected>1</option><option>1.5</option><option>2</option></select>
+          </label>
+          <label>Handshake
+            <select id="handshake">
+              <option value="off" selected>Off</option><option value="rts/cts">RTS/CTS</option>
+              <option value="xon/xoff">XON/XOFF</option><option value="dtr/dsr">DTR/DSR</option>
+            </select>
+          </label>
+          <label>RX gap ms
+            <input id="readGapMs" type="number" min="1" max="1000" value="20" title="ReadIntervalTimeout — inter-byte silence that ends one read"/>
+          </label>
+          <label>TX t/o ms
+            <input id="writeTimeoutMs" type="number" min="10" max="10000" value="500" title="WriteTotalTimeoutConstant — never 0"/>
+          </label>
+        </div>
+        <button id="btnOpen" class="primary wide">Open</button>
+      </section>
+
+      <section class="card">
+        <h3>Lines</h3>
+        <div class="lines">
+          <label class="sw"><input type="checkbox" id="dtr"/><span>DTR</span></label>
+          <label class="sw"><input type="checkbox" id="rts"/><span>RTS</span></label>
+        </div>
+        <div class="leds">
+          <span class="led" id="ledCTS">CTS</span>
+          <span class="led" id="ledDSR">DSR</span>
+          <span class="led" id="ledRI">RI</span>
+          <span class="led" id="ledDCD">DCD</span>
+        </div>
+        <div class="row">
+          <button id="btnBreak" class="ghost">Break 100 ms</button>
+          <button id="btnPurge" class="ghost">Purge</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Supervision</h3>
+        <label class="sw"><input type="checkbox" id="autoRecycle" checked/><span>Auto-recycle on degraded link</span></label>
+        <p class="hint">≥10 errors in 5 s ⇒ DEGRADED ⇒ close+reopen, retry every 5 s. Pull the adapter to test.</p>
+      </section>
+    </aside>
+
+    <!-- ===== centre: wire monitor ===== -->
+    <main class="centre">
+      <div class="toolbar">
+        <div class="seg">
+          <label class="sw small"><input type="checkbox" id="showRx" checked/><span>RX</span></label>
+          <label class="sw small"><input type="checkbox" id="showTx" checked/><span>TX</span></label>
+          <label class="sw small"><input type="checkbox" id="showInfo" checked/><span>Info</span></label>
+        </div>
+        <div class="seg">
+          <label class="sw small"><input type="checkbox" id="showHex" checked/><span>Hex</span></label>
+          <label class="sw small"><input type="checkbox" id="showAscii" checked/><span>ASCII</span></label>
+          <label class="sw small"><input type="checkbox" id="autoscroll" checked/><span>Follow</span></label>
+        </div>
+        <div class="seg right">
+          <span class="counter" id="cntRx">RX 0 B</span>
+          <span class="counter" id="cntTx">TX 0 B</span>
+          <button id="btnPause" class="ghost small">Pause</button>
+          <button id="btnCopy" class="ghost small">Copy</button>
+          <button id="btnClear" class="ghost small">Clear</button>
+        </div>
+      </div>
+      <div class="monitor" id="monitor"></div>
+
+      <div class="sendbar">
+        <div class="sendrow">
+          <input id="sendText" type="text" placeholder="text or hex bytes (e.g. 01 03 00 00 00 02 C4 0B)" autocomplete="off"/>
+          <label class="sw small"><input type="checkbox" id="sendHex" checked/><span>HEX</span></label>
+          <label class="sw small"><input type="checkbox" id="sendCR"/><span>+CR</span></label>
+          <label class="sw small"><input type="checkbox" id="sendLF"/><span>+LF</span></label>
+          <button id="btnSend" class="primary">Send</button>
+        </div>
+        <div class="sendrow secondary">
+          <span class="lbl">Repeat every</span>
+          <input id="repeatMs" type="number" min="10" value="500" style="width:70px"/>
+          <span class="lbl">ms</span>
+          <button id="btnRepeat" class="ghost small">Start</button>
+          <span class="lbl" id="repeatCount"></span>
+          <span class="spacer"></span>
+          <span class="lbl">Presets</span>
+          <button class="preset ghost small" data-slot="1">1</button>
+          <button class="preset ghost small" data-slot="2">2</button>
+          <button class="preset ghost small" data-slot="3">3</button>
+          <span class="hint">click = load · shift+click = save</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== right rail: live stats ===== -->
+    <aside class="rail right">
+      <section class="card">
+        <h3>Watchdog</h3>
+        <div class="big" id="wd">—</div>
+        <div class="kv"><span>advancing</span><b id="wdAdv">—</b></div>
+        <p class="hint">Reader-loop iterations. Must tick even on an idle line. Frozen = wedge.</p>
+      </section>
+      <section class="card">
+        <h3>Counters</h3>
+        <div class="kv"><span>RX bytes</span><b id="sRx">0</b></div>
+        <div class="kv"><span>TX bytes</span><b id="sTx">0</b></div>
+        <div class="kv"><span>reads</span><b id="sReads">0</b></div>
+        <div class="kv"><span>writes</span><b id="sWrites">0</b></div>
+      </section>
+      <section class="card">
+        <h3>Faults</h3>
+        <div class="kv"><span>errors</span><b id="sErr">0</b></div>
+        <div class="kv"><span>streak</span><b id="sStreak">0</b></div>
+        <div class="kv"><span>degraded</span><b id="sDeg">no</b></div>
+        <div class="kv"><span>recycles</span><b id="sRec">0</b></div>
+        <div class="kv"><span>probe errs</span><b id="sProbe">0</b></div>
+        <div class="kv"><span>line frame/parity</span><b id="sLineFP">0/0</b></div>
+        <div class="kv"><span>line overrun/rxover</span><b id="sLineOR">0/0</b></div>
+        <div class="kv"><span>timed-out waits</span><b id="sTOW">0</b></div>
+        <div class="kv"><span>present</span><b id="sPresent">—</b></div>
+        <div class="kv"><span>vanished</span><b id="sVanished">no</b></div>
+        <div class="kv"><span>wedged</span><b id="sWedged">no</b></div>
+        <div class="kv"><span>leaked handles</span><b id="sLeaked">0</b></div>
+        <div class="kv"><span>events dropped</span><b id="sSup">0</b></div>
+        <div class="kv"><span>tx queued</span><b id="sTxQ">0</b></div>
+        <div class="kv"><span>tx refused</span><b id="sTxD">0</b></div>
+        <div class="lasterr" id="sLastErr">—</div>
+      </section>
+      <section class="card">
+        <h3>Process</h3>
+        <div class="kv"><span>uptime</span><b id="sUp">0 s</b></div>
+        <div class="kv"><span>heartbeat</span><b id="sHb">—</b></div>
+      </section>
+    </aside>
+
+  </div>
+</div>
+<script src="./src/main.js" type="module"></script>
+</body>
+</html>
