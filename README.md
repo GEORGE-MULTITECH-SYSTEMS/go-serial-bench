@@ -7,11 +7,16 @@ adapter is unplugged.
 One executable. No installer, no runtime, no cgo, no driver. The UI is a local
 web page in a WebView2 window; everything from the UART up is Go.
 
-![Go Serial Bench detecting a USB adapter being unplugged and recovering on its own](docs/screenshot.png)
+![Go Serial Bench in dark theme, detecting a USB adapter being unplugged and recovering on its own](docs/screenshot-dark.png)
 
-*Above: the adapter was physically unplugged mid-session. The port is classified
-as vanished within milliseconds, the watchdog stalls rather than resetting, and
+*The adapter was physically unplugged mid-session. The port is classified as
+vanished within milliseconds, the watchdog stalls rather than resetting, and
 recovery retries on its own — including after a manual connect attempt failed.*
+
+![Go Serial Bench in light theme, showing the same session fully recovered](docs/screenshot-light.png)
+
+*The same session in light theme after recovery: `RECYCLE: resuming recovery`
+then `LINK RECYCLED OK`. Switch themes with the button in the title bar.*
 
 ## What it does
 
@@ -23,6 +28,9 @@ recovery retries on its own — including after a manual connect attempt failed.
 - **Line-error counters** — framing, parity, overrun, RX-overflow, break —
   read from `ClearCommError`. Without these, a line corrupting every byte
   looks exactly like a quiet one.
+- **Light and dark themes**, toggled from the button in the title bar. Text
+  contrast is recomputed from the actual surface brightness rather than
+  assumed, so the monitor stays readable on a bright bench or in a dim lab.
 - **Run two instances** on two ports to watch both ends of a link at once.
 
 ## Why another one
